@@ -1,316 +1,38 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>TikTok Live Match & Chat</title>
-  
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body, html {
-      width: 100%;
-      height: 100%;
-      background-color: #000000;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      overflow: hidden;
-    }
-
-    .app-container {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      background: #000;
-    }
-
-    /* مشغل الفيديو - البث كامل */
-    .video-wrapper {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #000;
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain; /* إظهار المبارة كاملة بدون قص */
-    }
-
-    /* واجهة العناصر */
-    .ui-layer {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 12px;
-      pointer-events: none;
-      background: linear-gradient(
-        180deg, 
-        rgba(0,0,0,0.6) 0%, 
-        rgba(0,0,0,0) 25%, 
-        rgba(0,0,0,0) 50%, 
-        rgba(0,0,0,0.85) 100%
-      );
-    }
-
-    .ui-layer * {
-      pointer-events: auto;
-    }
-
-    /* الهيدر العلوي */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      direction: ltr;
-    }
-
-    .host-info {
-      display: flex;
-      align-items: center;
-      background: rgba(0, 0, 0, 0.5);
-      padding: 4px 10px 4px 4px;
-      border-radius: 20px;
-      backdrop-filter: blur(8px);
-    }
-
-    .host-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: #333;
-      margin-right: 8px;
-      border: 1.5px solid #fe2c55;
-    }
-
-    .host-details {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .host-name {
-      color: #ffffff;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .live-badge {
-      color: #fe2c55;
-      font-size: 10px;
-      font-weight: bold;
-    }
-
-    .viewers-count {
-      background: rgba(0, 0, 0, 0.5);
-      color: #ffffff;
-      padding: 6px 12px;
-      border-radius: 16px;
-      font-size: 12px;
-      font-weight: 500;
-      backdrop-filter: blur(8px);
-    }
-
-    /* الجزء السفلي: الدردشة والأزرار */
-    .bottom-section {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 100%;
-    }
-
-    .chat-and-actions {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 10px;
-      width: 100%;
-    }
-
-    /* حاوية شات تلغرام بدون Scrollbar */
-    .telegram-chat-container {
-      width: calc(100% - 55px);
-      max-height: 250px;
-      overflow-y: auto;
-      border-radius: 12px;
-      background: rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 4px;
-
-      /* إخفاء شريط السكرول لجميع المتصفحات */
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE/Edge */
-    }
-
-    /* إخفاء شريط السكرول لـ Chrome, Safari, Opera */
-    .telegram-chat-container::-webkit-scrollbar {
-      display: none;
-      width: 0;
-      height: 0;
-    }
-
-    /* الأزرار الجانبية */
-    .side-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .action-btn {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    .like-btn {
-      background: rgba(254, 44, 85, 0.25);
-      color: #fe2c55;
-    }
-
-    /* حقل الكتابة وزر الصوت */
-    .bottom-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .chat-input-wrapper {
-      flex: 1;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(8px);
-      border-radius: 20px;
-      padding: 10px 14px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
-    .chat-input-wrapper input {
-      background: transparent;
-      border: none;
-      outline: none;
-      color: #ffffff;
-      width: 100%;
-      font-size: 13px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>البث المباشر</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+    </style>
 </head>
 <body>
 
-  <div class="app-container">
-    <!-- مشغل البث المباشر -->
-    <div class="video-wrapper">
-      <video id="video" autoplay muted playsinline></video>
-    </div>
+    <video id="video" controls autoplay playsinline></video>
 
-    <!-- واجهة المستخدم والتفاعل -->
-    <div class="ui-layer">
-      <!-- الهيدر -->
-      <div class="header">
-        <div class="host-info">
-          <div class="host-avatar"></div>
-          <div class="host-details">
-            <span class="host-name">Arena Sports LIVE</span>
-            <span class="live-badge">● LIVE</span>
-          </div>
-        </div>
-        <div class="viewers-count">👁 14.2K</div>
-      </div>
+    <script>
+        // رابط ملف الـ PHP الخاص بك
+        const streamUrl = 'stream.php'; 
+        const video = document.getElementById('video');
 
-      <!-- المنطقة السفلية -->
-      <div class="bottom-section">
-        <div class="chat-and-actions">
-          <!-- الدردشة المباشرة (بدون سكرول بار) -->
-          <div class="telegram-chat-container">
-            <script async src="https://telegram.org/js/telegram-widget.js?24" 
-                    data-telegram-discussion="c77m1/89081" 
-                    data-comments-limit="10" 
-                    data-colorful="1" 
-                    data-dark="1">
-            </script>
-          </div>
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(streamUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.play();
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = streamUrl;
+            video.addEventListener('loadedmetadata', function() {
+                video.play();
+            });
+        }
+    </script>
 
-          <!-- أزرار التفاعل الجانبية -->
-          <div class="side-actions">
-            <button class="action-btn like-btn">
-              <i data-lucide="heart"></i>
-            </button>
-            <button class="action-btn">
-              <i data-lucide="share-2"></i>
-            </button>
-            <button class="action-btn">
-              <i data-lucide="gift"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- حقل الإدخال والصوت -->
-        <div class="bottom-bar">
-          <div class="chat-input-wrapper">
-            <input type="text" placeholder="إضافة تعليق..." readonly onclick="window.open('https://t.me/c77m1/89081', '_blank')" />
-          </div>
-          <button class="action-btn" onclick="toggleMute()">
-            <i id="volume-icon" data-lucide="volume-x"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    lucide.createIcons();
-
-    // تشغيل البث المباشر HLS
-    const video = document.getElementById('video');
-    const videoSrc = 'https://cdn.gamhed.online/hls/arena8x-1.m3u8';
-
-    if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true });
-      hls.loadSource(videoSrc);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = videoSrc;
-      video.addEventListener('loadedmetadata', () => video.play());
-    }
-
-    // كتم/تشغيل الصوت
-    function toggleMute() {
-      video.muted = !video.muted;
-      const icon = document.getElementById('volume-icon');
-      icon.setAttribute('data-lucide', video.muted ? 'volume-x' : 'volume-2');
-      lucide.createIcons();
-    }
-  </script>
 </body>
 </html>
